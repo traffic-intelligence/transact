@@ -2,7 +2,7 @@ from enum import Enum
 from logging import error, info, debug
 from typing import Callable
 
-from transact.transaction import NoUndoTransaction, NoDoTransaction
+from transact.operation import NoUndoOperation, NoDoOperation
 
 
 class LoggingType(Enum):
@@ -16,7 +16,7 @@ def _log(log_func: Callable, message: str):
     return True
 
 
-class DoLoggingTransaction(NoUndoTransaction):
+class DoLoggingOperation(NoUndoOperation):
 
     def __init__(self, logging_type: LoggingType, message: str):
         if logging_type == LoggingType.ERROR:
@@ -31,7 +31,7 @@ class DoLoggingTransaction(NoUndoTransaction):
         super().__init__(do_action)
 
 
-class UnDoLoggingTransaction(NoDoTransaction):
+class UnDoLoggingOperation(NoDoOperation):
 
     def __init__(self, logging_type: LoggingType, message: str):
         if logging_type == LoggingType.ERROR:

@@ -1,45 +1,34 @@
-from typing import Callable
-from logging import error
+from typing import List
+from logging import error, info
 
+from transact.operation import Operation, OperationFailure
 from transact.job import Job
 
 
 class Transaction:
 
-    def __init__(self, action: Callable[[Job], bool], undo_action: Callable[[Job], bool], retry: int = 0):
-        self._action = action
-        self._undo_action = undo_action
-        self._retry = retry
+    def __init__(self, transactions: List[Operation]):
+        self._transactions = transactions
 
-    def do(self, job: Job) -> bool:
-        for i in range(self._retry):
+    def enqueue(self, job: Job):
+        for i, transaction in enumerate(self._transactions):
             try:
-                success = self._action(job)
-
-                if job.failure or not success:
-                    raise TransactionFailure()
-
-                return success
+                success = transaction.do(job)
+                if not success or job.failure:
+                    raise OperationFailure()
             except Exception as e:
-                error(f'Failed to do job {job} in transaction {self} for retry {i} because {e}')
+                error(f'orchestrator failed to do transaction {transaction} at index {i} for job {job} '
+                      f'with exception {e}')
+                self.undo_all(job, i)
 
-        return self._action(job)
+    def undo_all(self, job: Job, index: int):
+        while index >= 0:
+            current_transaction = self._transactions[index]
 
-    def undo(self, job: Job):
-        return self._undo_action(job)
+            try:
+                current_transaction.undo(job)
+            except Exception as e:
+                error(f'orchestrator failed undo transaction {current_transaction} at index {index} for job {job} '
+                      f'with exception {e}')
 
-
-class NoUndoTransaction(Transaction):
-
-    def __init__(self, action: Callable[[Job], bool], retry: int = 0):
-        super().__init__(action, lambda x: True, retry)
-
-
-class NoDoTransaction(Transaction):
-    def __init__(self, undo_action: Callable[[Job], bool], retry: int = 0):
-        super().__init__(lambda x: True, undo_action, retry)
-
-
-class TransactionFailure(Exception):
-    def __init__(self):
-        super().__init__("Transaction failed")
+            index -= 1

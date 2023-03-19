@@ -1,5 +1,6 @@
+from transact.operation import Operation, OperationFailure
+from transact.transaction import Transaction
 from transact.job import Job
-from transact.transaction import Transaction, NoUndoTransaction, TransactionFailure
 
 
 def do(job: Job):
@@ -12,62 +13,69 @@ def undo(job: Job):
     return True
 
 
-def test_transaction_do_undo():
-    transaction = Transaction(do, undo)
+def test_transaction_undo_failure():
+    def fail(job: Job):
+        raise OperationFailure()
+
+    success_operation = Operation(do, undo)
+    failure_operation = Operation(fail, lambda x: True)
+
+    transaction = Transaction([success_operation, failure_operation])
     job = Job()
 
-    transaction.do(job)
+    transaction.enqueue(job)
+
+    assert job.__getattribute__("test") == False
+
+
+def test_transaction_undo_false():
+    def fail(job: Job):
+        job.__setattr__("test2", True)
+        return False
+
+    def undo_fail(job: Job):
+        job.__setattr__("test2", False)
+        return True
+
+    success_operation = Operation(do, undo)
+    failure_operation = Operation(fail, undo_fail)
+
+    transaction = Transaction([success_operation, failure_operation])
+    job = Job()
+
+    transaction.enqueue(job)
+
+    assert job.__getattribute__("test") == False
+    assert job.__getattribute__("test2") == False
+
+
+def test_transaction_undo_job_failure():
+    def fail(job: Job):
+        job.failure = True
+        return True
+
+    def undo_fail(job: Job):
+        job.__setattr__("test2", False)
+        return True
+
+    success_operation = Operation(do, undo)
+    failure_operation = Operation(fail, undo_fail)
+
+    transaction = Transaction([success_operation, failure_operation])
+    job = Job()
+
+    transaction.enqueue(job)
+
+    assert job.__getattribute__("test") == False
+    assert job.__getattribute__("test2") == False
+
+
+def test_transaction_success():
+    success_operation = Operation(do, undo)
+
+    transaction = Transaction([success_operation])
+    job = Job()
+
+    transaction.enqueue(job)
+
     assert job.__getattribute__("test")
-
-    transaction.undo(job)
-    assert not job.__getattribute__("test")
-
-
-def test_transaction_retry():
-    def inc_counter(job: Job):
-        comp = job.counter == 2
-        job.counter += 1
-        return comp
-
-    job = Job()
-    job.__setattr__("counter", 0)
-
-    transaction = NoUndoTransaction(inc_counter, 2)
-
-    transaction.do(job)
-    assert job.counter == 3
-
-
-def test_transaction_retry_fail():
-    def inc_counter(job: Job):
-        comp = job.counter == 2
-        job.counter += 1
-        return comp
-
-    job = Job()
-    job.__setattr__("counter", 0)
-
-    transaction = NoUndoTransaction(inc_counter, 1)
-
-    success = transaction.do(job)
-    assert not success
-
-
-def test_transaction_retry_fail_exception():
-    def inc_counter(job: Job):
-        job.counter += 1
-        raise TransactionFailure()
-
-    job = Job()
-    job.__setattr__("counter", 0)
-
-    transaction = NoUndoTransaction(inc_counter, 1)
-    try:
-        success = transaction.do(job)
-        assert not success
-    except TransactionFailure as e:
-        assert True
-        assert job.counter == 2
-    except Exception as e:
-        print(f'test failed because {e}')
-        assert False
