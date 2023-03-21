@@ -66,13 +66,17 @@ operations = [
     operation,
     DoLoggingOperation(LoggingType.DEBUG, "This is an example")
 ]
-job = Job()
+job = Job({
+    "name": "example job"
+})
 
 transaction = Transaction(operations)
 
 success = transaction.enqueue(job)
 ```
-If an operation fails, the orchestrator automatically rolls back all the operation.
+If an operation fails, the orchestrator automatically rolls back all the operation. If certain 
+attributes of the job should be set before the operations process it, the `kwargs` can be used. 
+We can also pass a dictionary to the job directly.
 
 ## Developing
 
