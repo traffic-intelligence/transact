@@ -10,7 +10,7 @@ class Transaction:
     def __init__(self, transactions: List[Operation]):
         self._transactions = transactions
 
-    def enqueue(self, job: Job):
+    def enqueue(self, job: Job) -> bool:
         for i, transaction in enumerate(self._transactions):
             try:
                 success = transaction.do(job)
@@ -19,9 +19,11 @@ class Transaction:
             except Exception as e:
                 error(f'orchestrator failed to do transaction {transaction} at index {i} for job {job} '
                       f'with exception {e}')
-                self.undo_all(job, i)
+                return self.undo_all(job, i)
 
-    def undo_all(self, job: Job, index: int):
+        return True
+
+    def undo_all(self, job: Job, index: int) -> bool:
         while index >= 0:
             current_transaction = self._transactions[index]
 
@@ -32,3 +34,5 @@ class Transaction:
                       f'with exception {e}')
 
             index -= 1
+
+        return False

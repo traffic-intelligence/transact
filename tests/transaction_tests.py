@@ -23,9 +23,10 @@ def test_transaction_undo_failure():
     transaction = Transaction([success_operation, failure_operation])
     job = Job()
 
-    transaction.enqueue(job)
+    success = transaction.enqueue(job)
 
     assert job.__getattribute__("test") == False
+    assert not success
 
 
 def test_transaction_undo_false():
@@ -43,10 +44,11 @@ def test_transaction_undo_false():
     transaction = Transaction([success_operation, failure_operation])
     job = Job()
 
-    transaction.enqueue(job)
+    success = transaction.enqueue(job)
 
     assert job.__getattribute__("test") == False
     assert job.__getattribute__("test2") == False
+    assert not success
 
 
 def test_transaction_undo_job_failure():
@@ -64,10 +66,11 @@ def test_transaction_undo_job_failure():
     transaction = Transaction([success_operation, failure_operation])
     job = Job()
 
-    transaction.enqueue(job)
+    success = transaction.enqueue(job)
 
     assert job.__getattribute__("test") == False
     assert job.__getattribute__("test2") == False
+    assert not success
 
 
 def test_transaction_success():
@@ -76,6 +79,7 @@ def test_transaction_success():
     transaction = Transaction([success_operation])
     job = Job()
 
-    transaction.enqueue(job)
+    success = transaction.enqueue(job)
 
     assert job.__getattribute__("test")
+    assert success
