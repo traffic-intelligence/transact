@@ -78,6 +78,27 @@ If an operation fails, the orchestrator automatically rolls back all the operati
 attributes of the job should be set before the operations process it, the `kwargs` can be used. 
 We can also pass a dictionary to the job directly.
 
+### Decorators
+
+To spead up the development of `NoDoOperation` and `NoUndoOperation`, the decorators 
+`no_do_operation` and `no_undo_operation`. To create these operations, functions can simply
+be annotated with the decorator. The decorator loads all the function attributes from the job 
+and passes them to the function. 
+
+```python
+from transact.decorators import no_do_operation, no_undo_operation
+
+@no_undo_operation()
+def do_stuff(attribute1):
+    print(attribute1)
+    return True
+
+@no_do_operation()
+def undo_stuff(attribute2):
+    print(attribute2)
+    return True
+```
+
 ## Developing
 
 To run all unittests use:
