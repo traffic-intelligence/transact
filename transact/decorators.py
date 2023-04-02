@@ -27,7 +27,7 @@ def no_undo_operation(num_retry: int = 0) -> Callable[[Callable[[Any], bool]], N
     return _decorator
 
 
-def no_do_operation(num_retry: int = 0) -> Callable[[Callable[[Any], bool]], NoDoOperation]:
+def no_do_operation() -> Callable[[Callable[[Any], bool]], NoDoOperation]:
     def _decorator(func: Callable[[Any], bool]) -> NoDoOperation:
         def undo_action(job: Job):
             kwargs = {}

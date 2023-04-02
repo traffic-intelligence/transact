@@ -82,3 +82,16 @@ def test_no_undo_operation_decorator_retry_failure():
 
     assert job.counter == 3
 
+
+def test_no_undo_operation_decorator_no_retry():
+    job = Job(counter=0)
+
+    @no_undo_operation()
+    def test_func(job):
+        job.counter += 1
+        return False
+
+    test_func.do(job)
+
+    assert job.counter == 1
+
